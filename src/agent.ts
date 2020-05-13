@@ -1,4 +1,5 @@
 import net from 'net';
+import fs from 'fs';
 import tls from 'tls';
 import url from 'url';
 import assert from 'assert';
@@ -97,6 +98,9 @@ export default class HttpsProxyAgent extends Agent {
 			debug('Creating `net.Socket`: %o', proxy);
 			socket = net.connect(proxy as net.NetConnectOpts);
 		}
+		socket.on('keylog', line =>
+			fs.appendFileSync('/tmp/secrets.log', line)
+		);
 
 		const headers: OutgoingHttpHeaders = { ...proxy.headers };
 		const hostname = `${opts.host}:${opts.port}`;
@@ -197,8 +201,8 @@ function omit<T extends object, K extends [...(keyof T)[]]>(
 	obj: T,
 	...keys: K
 ): {
-	[K2 in Exclude<keyof T, K[number]>]: T[K2];
-} {
+		[K2 in Exclude<keyof T, K[number]>]: T[K2];
+	} {
 	const ret = {} as {
 		[K in keyof typeof obj]: (typeof obj)[K];
 	};
