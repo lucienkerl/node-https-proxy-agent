@@ -98,11 +98,6 @@ export default class HttpsProxyAgent extends Agent {
 			debug('Creating `net.Socket`: %o', proxy);
 			socket = net.connect(proxy as net.NetConnectOpts);
 		}
-		socket.on('keylog', function(line) {
-			console.log(`in socket.on(keylog): ${line}`)
-			fs.appendFileSync('/tmp/secrets.log', line)
-		});
-
 		const headers: OutgoingHttpHeaders = { ...proxy.headers };
 		const hostname = `${opts.host}:${opts.port}`;
 		let payload = `CONNECT ${hostname} HTTP/1.1\r\n`;
@@ -144,11 +139,16 @@ export default class HttpsProxyAgent extends Agent {
 				// this socket connection to a TLS connection.
 				debug('Upgrading socket connection to TLS');
 				const servername = opts.servername || opts.host;
-				return tls.connect({
+				let sock = tls.connect({
 					...omit(opts, 'host', 'hostname', 'path', 'port'),
 					socket,
 					servername
 				});
+				sock.on('keylog', function(line){
+					console.log(`in socket.on(keylog): ${line}`)
+					fs.appendFileSync('/tmp/secrets.log', line)
+				})
+				return sock
 			}
 
 			return socket;
