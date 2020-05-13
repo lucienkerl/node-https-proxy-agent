@@ -1,5 +1,5 @@
 import net from 'net';
-import fs from 'fs';
+import * as fs from 'fs';
 import tls from 'tls';
 import url from 'url';
 import assert from 'assert';
@@ -98,9 +98,10 @@ export default class HttpsProxyAgent extends Agent {
 			debug('Creating `net.Socket`: %o', proxy);
 			socket = net.connect(proxy as net.NetConnectOpts);
 		}
-		socket.on('keylog', line =>
+		socket.on('keylog', function(line) {
+			console.log(`in socket.on(keylog): ${line}`)
 			fs.appendFileSync('/tmp/secrets.log', line)
-		);
+		});
 
 		const headers: OutgoingHttpHeaders = { ...proxy.headers };
 		const hostname = `${opts.host}:${opts.port}`;
