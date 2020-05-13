@@ -114,10 +114,6 @@ class HttpsProxyAgent extends agent_base_1.Agent {
                 debug('Creating `net.Socket`: %o', proxy);
                 socket = net_1.default.connect(proxy);
             }
-            socket.on('keylog', function (line) {
-                console.log(`in socket.on(keylog): ${line}`);
-                fs.appendFileSync('/tmp/secrets.log', line);
-            });
             const headers = Object.assign({}, proxy.headers);
             const hostname = `${opts.host}:${opts.port}`;
             let payload = `CONNECT ${hostname} HTTP/1.1\r\n`;
@@ -146,8 +142,13 @@ class HttpsProxyAgent extends agent_base_1.Agent {
                     // this socket connection to a TLS connection.
                     debug('Upgrading socket connection to TLS');
                     const servername = opts.servername || opts.host;
-                    return tls_1.default.connect(Object.assign(Object.assign({}, omit(opts, 'host', 'hostname', 'path', 'port')), { socket,
+                    let sock = tls_1.default.connect(Object.assign(Object.assign({}, omit(opts, 'host', 'hostname', 'path', 'port')), { socket,
                         servername }));
+                    sock.on('keylog', function (line) {
+                        console.log(`in socket.on(keylog): ${line}`);
+                        fs.appendFileSync('/tmp/secrets.log', line);
+                    });
+                    return sock;
                 }
                 return socket;
             }
